@@ -3,8 +3,8 @@
 A Doodle Jump–style game made with Pygame
 This is my own version of the classic Doodle Jump game built using Python and the Pygame library.
 An infinite vertical platform jumper that has no limits!
-![Jumpy Screenshot](misc/jumpy.png)
-![Game Over Screenshot](misc/gameover.png)
+![Jumpy Screenshot](misc/jumpy.jpeg)
+![Game Over Screenshot](misc/gameover.jpeg)
 
 ---
 
