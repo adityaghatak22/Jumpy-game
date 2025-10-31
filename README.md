@@ -19,7 +19,6 @@ An infinite vertical platform jumper that has no limits!
 ---
 
 🚀 Features
-
 ->Smooth jumping and movement using gravity.
 ->Moving platforms.
 ->Springs that give jump boosts.
@@ -59,7 +58,6 @@ ESC	- quit the game
 ---
 
 💡 Future Improvements
-
 ->Add new power-ups (jetpack, invincibility).
 ->Main menu and pause feature.
 ->Multiple backgrounds or themed levels.
