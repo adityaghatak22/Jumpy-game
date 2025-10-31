@@ -62,7 +62,37 @@ ESC	- quit the game
 ->Main menu and pause feature.
 ->Multiple backgrounds or themed levels.
 
+---
 
+⚙️ Concepts Applied from the Course
+
+->Object-Oriented Programming (OOP):
+    Classes like Player, Platform, Spring, and Bird encapsulate behavior and attributes separately.
+    Inheritance and composition were used to manage sprite behavior using Pygame’s Sprite class.
+
+->Functions & Modular Programming:
+    Core logic like spawning platforms, updating gravity, and collision detection are implemented in reusable functions to keep the main loop clean.
+
+->List Comprehension:
+    Used to efficiently apply updates to all sprite objects and remove off-screen ones.
+
+->File Handling:
+    High scores are stored using simple text I/O operations (open(), read(), write()), giving practical use to persistent storage concepts.
+
+->Event Handling:
+    Implemented user input detection using Pygame’s event queue (pygame.event.get()), handling key presses for movement and restart logic.
+
+->Game Physics:
+    Applied knowledge of motion under gravity, using a velocity variable that increases over time to simulate realistic jumps.
+  
+->Randomization & Probability:
+    Used Python’s random module to control spawn probability for springs, moving platforms, and birds, making gameplay unpredictable.
+
+->Exception Handling:
+    Safely handled cases where highscore.txt might not exist on the first run, creating it dynamically to prevent crashes.
+
+->Audio Management:
+    Integrated background music using pygame.mixer.music and event-triggered sound effects using pygame.mixer.Sound.
 
 
 
