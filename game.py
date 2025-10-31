@@ -1,7 +1,7 @@
 # --------------------------------------------
+#                   JUMPY
 #   Doodle Jump Style Game using Pygame
-#   Author: (Your Name)
-#   Description: A simple platform jumper game
+#   Author: Aditya Ghatak - 316
 # --------------------------------------------
 
 import pygame
@@ -11,6 +11,7 @@ import random
 #   INITIALIZATION
 # --------------------------------------------
 pygame.init()
+pygame.mixer.init()  # Initialize sound mixer
 
 # --------------------------------------------
 #   GAME WINDOW SETUP
@@ -53,8 +54,27 @@ bg_image = pygame.image.load('assets/bg2.png').convert_alpha()
 jumpy_image = pygame.image.load('assets/jump.png').convert_alpha()
 platform_image = pygame.image.load('assets/wood.png').convert_alpha()
 bird_image = pygame.image.load('assets/bird.png').convert_alpha()
+spring_image = pygame.image.load('assets/spring.png').convert_alpha()
 
 bg_image_scaled = pygame.transform.scale(bg_image, (BASE_WIDTH, BASE_HEIGHT))
+
+# --------------------------------------------
+#   LOAD SOUNDS
+# --------------------------------------------
+pygame.mixer.music.load('assets/bgmusic.mp3')  
+pygame.mixer.music.set_volume(0.4)
+
+spring_sound = pygame.mixer.Sound('assets/spring.wav')
+spring_sound.set_volume(0.7)
+
+jump_sound = pygame.mixer.Sound('assets/jump.wav')
+jump_sound.set_volume(0.6)
+
+death_sound = pygame.mixer.Sound('assets/death.wav')
+death_sound.set_volume(0.7)
+
+# Start background music loop
+pygame.mixer.music.play(-1)
 
 # --------------------------------------------
 #   FONTS
@@ -109,15 +129,29 @@ class Player():
             dx = BASE_WIDTH - self.rect.right
 
         global score
+        platform_bounced = False
+
         for platform in platform_group:
             if platform.rect.colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
                 if self.rect.bottom < platform.rect.centery and self.vel_y > 0:
                     self.rect.bottom = platform.rect.top
                     dy = 0
                     self.vel_y = -20
+                    platform_bounced = True
                     if self.last_platform != platform:
                         score += 10
                         self.last_platform = platform
+                        jump_sound.play()
+
+        # Spring collision (+50 points)
+        for spring in spring_group:
+            if spring.rect.colliderect(self.rect.x, self.rect.y + dy, self.width, self.height):
+                if self.rect.bottom < spring.rect.centery and self.vel_y > 0:
+                    self.rect.bottom = spring.rect.top + 5
+                    dy = 0
+                    self.vel_y = -30
+                    score += 50
+                    spring_sound.play()
 
         if self.rect.top <= SCROLL_THRESH and self.vel_y < 0:
             scroll = -dy
@@ -168,6 +202,26 @@ class MovingPlatform(Platform):
 
 
 # --------------------------------------------
+#   SPRING CLASS
+# --------------------------------------------
+class Spring(pygame.sprite.Sprite):
+    def __init__(self, platform):
+        super().__init__()
+        self.image = pygame.transform.scale(spring_image, (30, 25))
+        self.rect = self.image.get_rect()
+        self.rect.centerx = platform.rect.centerx
+        self.rect.bottom = platform.rect.top + 5
+        self.platform = platform
+
+    def update(self, scroll):
+        self.rect.y += scroll
+        if self.platform.alive():
+            self.rect.bottom = self.platform.rect.top + 5
+        else:
+            self.kill()
+
+
+# --------------------------------------------
 #   BIRD CLASS
 # --------------------------------------------
 class Bird(pygame.sprite.Sprite):
@@ -178,7 +232,6 @@ class Bird(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.y = y
         self.rect.x = random.choice([-size, BASE_WIDTH + size])
-        # 🔹 increased speed (2x faster)
         self.speed = random.choice([4, 5]) * (1 if self.rect.x < 0 else -1)
 
     def update(self, scroll):
@@ -192,10 +245,11 @@ class Bird(pygame.sprite.Sprite):
 #   FUNCTIONS
 # --------------------------------------------
 def reset_game():
-    global platform_group, bird_group, jumpy, scroll, score, highest_y, current_gravity, game_over, last_bird_spawn_time
+    global platform_group, bird_group, spring_group, jumpy, scroll, score, highest_y, current_gravity, game_over, last_bird_spawn_time
 
     platform_group.empty()
     bird_group.empty()
+    spring_group.empty()
     score = 0
     highest_y = BASE_HEIGHT
     scroll = 0
@@ -206,6 +260,9 @@ def reset_game():
     jumpy.rect.center = (BASE_WIDTH // 2, BASE_HEIGHT - 200)
     jumpy.vel_y = 0
     jumpy.last_platform = None
+
+    # Restart background music
+    pygame.mixer.music.play(-1)
 
     # starting platform
     start_width = 100
@@ -223,6 +280,11 @@ def reset_game():
         platform = Platform(p_x, p_y, p_w)
         platform_group.add(platform)
 
+        #  spring spawn chance
+        if random.random() < 0.1:
+            spring = Spring(platform)
+            spring_group.add(spring)
+
 
 # --------------------------------------------
 #   INITIALIZE OBJECTS
@@ -230,6 +292,7 @@ def reset_game():
 jumpy = Player(BASE_WIDTH // 2, BASE_HEIGHT - 200)
 platform_group = pygame.sprite.Group()
 bird_group = pygame.sprite.Group()
+spring_group = pygame.sprite.Group()
 reset_game()
 
 # --------------------------------------------
@@ -258,10 +321,13 @@ while running:
         platform_group.update(scroll)
         platform_group.draw(game_surface)
 
+        # --- Springs ---
+        spring_group.update(scroll)
+        spring_group.draw(game_surface)
+
         # --- Bird Spawn ---
         current_time = pygame.time.get_ticks()
         if score > 200 and len(bird_group) < 2 and current_time - last_bird_spawn_time > BIRD_SPAWN_DELAY:
-            # 🔹 spawn near top of screen (instead of around player)
             y = random.randint(50, 150)
             bird = Bird(y)
             bird_group.add(bird)
@@ -294,12 +360,19 @@ while running:
                 platform_group.add(new_platform)
                 highest_platform_y = p_y
 
+                #  10% spring spawn chance
+                if random.random() < 0.1:
+                    spring = Spring(new_platform)
+                    spring_group.add(spring)
+
         # --- Player ---
         jumpy.draw(game_surface)
 
         # --- Collision Check with Bird ---
         if pygame.sprite.spritecollide(jumpy, bird_group, False):
             game_over = True
+            pygame.mixer.music.stop()
+            death_sound.play()  
 
         # --- Draw Everything on Screen ---
         scaled_surface = pygame.transform.scale(game_surface, (new_width, new_height))
@@ -322,6 +395,8 @@ while running:
         # --- Game Over Condition ---
         if jumpy.rect.top > BASE_HEIGHT:
             game_over = True
+            pygame.mixer.music.stop()
+            death_sound.play()  
             if score > high_score:
                 high_score = score
                 with open("highscore.txt", "w") as f:
